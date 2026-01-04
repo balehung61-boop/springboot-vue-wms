@@ -23,47 +23,47 @@ public class UserController {
 
     // 1. 查询所有 (用于测试)
     @GetMapping("/list")
-    public Result list(){
+    public Result list() {
         List<User> list = userService.list();
         return Result.success(list);
     }
 
     // 2. 新增
     @PostMapping("/save")
-    public Result save(@RequestBody User user){
+    public Result save(@RequestBody User user) {
         return userService.save(user) ? Result.success() : Result.fail();
     }
 
     // 3. 更新
     @PostMapping("/mod")
-    public Result mod(@RequestBody User user){
+    public Result mod(@RequestBody User user) {
         return userService.updateById(user) ? Result.success() : Result.fail();
     }
 
     // 4. 新增或更新 (根据是否有ID判断)
     @PostMapping("/saveOrMod")
-    public Result saveOrMod(@RequestBody User user){
+    public Result saveOrMod(@RequestBody User user) {
         return userService.saveOrUpdate(user) ? Result.success() : Result.fail();
     }
 
     // 5. 删除
     @GetMapping("/delete")
-    public Result delete(Integer id){
+    public Result delete(Integer id) {
         return userService.removeById(id) ? Result.success() : Result.fail();
     }
 
     // 6. 分页查询 + 模糊搜索 (高级版，用对象接收参数)
     @PostMapping("/listPage")
-    public Result listPage(@RequestBody QueryPageParam query){
+    public Result listPage(@RequestBody QueryPageParam query) {
         HashMap param = query.getParam();
-        String name = (String)param.get("name"); // 从 map 里取参数
+        String name = (String) param.get("name"); // 从 map 里取参数
 
         Page<User> page = new Page();
         page.setCurrent(query.getPageNum());
         page.setSize(query.getPageSize());
 
         LambdaQueryWrapper<User> lambdaQueryWrapper = new LambdaQueryWrapper();
-        if(StringUtils.isNotBlank(name)){
+        if (StringUtils.isNotBlank(name)) {
             lambdaQueryWrapper.like(User::getName, name);
         }
 
@@ -74,13 +74,13 @@ public class UserController {
     // 6. (简单版) 分页查询 + 搜索
     @GetMapping("/listP")
     public Result listP(@RequestParam(defaultValue = "1") int pageNum,
-                        @RequestParam(defaultValue = "10") int pageSize,
-                        @RequestParam(defaultValue = "") String name){
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(defaultValue = "") String name) {
 
         Page<User> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<User> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         // 如果 name 不为空，就像这样查询: where name like '%name%'
-        if(StringUtils.isNotBlank(name)){
+        if (StringUtils.isNotBlank(name)) {
             lambdaQueryWrapper.like(User::getName, name);
         }
 
@@ -91,15 +91,41 @@ public class UserController {
 
     // ▼▼▼ 添加登录接口 ▼▼▼
     @PostMapping("/login")
-    public Result login(@RequestBody User user){
+    public Result login(@RequestBody User user) {
         List<User> list = userService.lambdaQuery()
                 .eq(User::getNo, user.getNo())
                 .eq(User::getPassword, user.getPassword()).list();
 
-        if(list.size() > 0){
+        if (list.size() > 0) {
             return Result.success(list.get(0));
         }
         return Result.fail();
     }
     // ▲▲▲ 添加结束 ▲▲▲
+
+    // ▼▼▼ 添加注册接口 ▼▼▼
+    @PostMapping("/register")
+    public Result register(@RequestBody User user) {
+        // 1. 检查账号是否已存在
+        List<User> existUsers = userService.lambdaQuery()
+                .eq(User::getNo, user.getNo()).list();
+        if (existUsers.size() > 0) {
+            Result res = Result.fail();
+            res.setMsg("账号已存在，请更换账号");
+            return res;
+        }
+
+        // 2. 设置默认值
+        user.setRoleId(2); // 普通用户角色
+        user.setUserLevel(1); // 默认等级
+        user.setIsValid("Y"); // 有效状态
+
+        // 3. 保存用户
+        boolean saved = userService.save(user);
+        if (saved) {
+            return Result.success(user);
+        }
+        return Result.fail();
+    }
+    // ▲▲▲ 注册接口结束 ▲▲▲
 }

@@ -27,25 +27,41 @@ public class GoodsController {
 
     // 新增或修改
     @PostMapping("/saveOrMod")
-    public Result saveOrMod(@RequestBody Goods goods){
+    public Result saveOrMod(@RequestBody Goods goods) {
         return goodsService.saveOrUpdate(goods) ? Result.success() : Result.fail();
     }
 
     // 删除
     @GetMapping("/delete")
-    public Result delete(Integer id){
+    public Result delete(Integer id) {
         return goodsService.removeById(id) ? Result.success() : Result.fail();
     }
 
-    // 分页查询
+    // 分页查询 - 支持多字段模糊搜索
     @PostMapping("/listPage")
-    public Result listPage(@RequestBody QueryPageParam query){
+    public Result listPage(@RequestBody QueryPageParam query) {
         Page<Goods> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<Goods> lambdaQueryWrapper = new LambdaQueryWrapper<>();
 
-        String name = (String)query.getParam().get("name");
-        if(StringUtils.isNotBlank(name)){
-            lambdaQueryWrapper.like(Goods::getName, name);
+        String name = (String) query.getParam().get("name");
+        if (StringUtils.isNotBlank(name)) {
+            // 支持多字段模糊搜索：名称、备注、单位
+            lambdaQueryWrapper.and(wrapper -> wrapper
+                    .like(Goods::getName, name)
+                    .or().like(Goods::getRemark, name)
+                    .or().like(Goods::getUnit, name));
+        }
+
+        // 新增：筛选逻辑 (前端传来的是 key: "storage", "goodstype")
+        String storage = (String) query.getParam().get("storage");
+        String goodstype = (String) query.getParam().get("goodstype");
+
+        // 注意：实体类字段是 storageId 和 goodstypeId
+        if (StringUtils.isNotBlank(storage) && !"null".equals(storage)) {
+            lambdaQueryWrapper.eq(Goods::getStorageId, Integer.valueOf(storage));
+        }
+        if (StringUtils.isNotBlank(goodstype) && !"null".equals(goodstype)) {
+            lambdaQueryWrapper.eq(Goods::getGoodstypeId, Integer.valueOf(goodstype));
         }
 
         IPage result = goodsService.page(page, lambdaQueryWrapper);
@@ -54,10 +70,11 @@ public class GoodsController {
 
     // ▼▼▼ 新增：入库操作 ▼▼▼
     @PostMapping("/inStock")
-    public Result inStock(@RequestBody Record record){
+    public Result inStock(@RequestBody Record record) {
         // 1. 找商品
         Goods goods = goodsService.getById(record.getGoodsId());
-        if(goods == null) return Result.fail();
+        if (goods == null)
+            return Result.fail();
 
         // 2. 更新库存
         int newCount = goods.getCount() + record.getCount();
@@ -67,8 +84,7 @@ public class GoodsController {
         // 3. 记录入库流水
         record.setCreatetime(LocalDateTime.now());
         record.setCount(record.getCount()); // 入库是正数
-        // 实际开发中这里要从 Session 获取当前登录人 ID，这里先写死 1 (admin)
-        record.setUserId(1);
+        // userId 由前端传入，不再硬编码
         record.setRemark(record.getRemark());
         recordService.save(record);
 
@@ -77,14 +93,15 @@ public class GoodsController {
 
     // ▼▼▼ 新增：出库操作 ▼▼▼
     @PostMapping("/outStock")
-    public Result outStock(@RequestBody Record record){
+    public Result outStock(@RequestBody Record record) {
         // 1. 找商品
         Goods goods = goodsService.getById(record.getGoodsId());
-        if(goods == null) return Result.fail();
+        if (goods == null)
+            return Result.fail();
 
         // 2. 检查库存够不够
         int newCount = goods.getCount() - record.getCount();
-        if(newCount < 0) {
+        if (newCount < 0) {
             // 库存不足，返回失败提示
             Result res = Result.fail();
             res.setMsg("库存不足，无法出库！");
@@ -98,7 +115,7 @@ public class GoodsController {
         // 4. 记录出库流水
         record.setCreatetime(LocalDateTime.now());
         record.setCount(-record.getCount()); // 出库记录为负数，方便统计
-        record.setUserId(1);
+        // userId 由前端传入，不再硬编码
         recordService.save(record);
 
         return Result.success();

@@ -109,6 +109,7 @@
 <script setup>
 import { ref, onMounted, reactive, nextTick } from 'vue';
 import axios from 'axios';
+import { ElMessage } from 'element-plus';
 
 const tableData = ref([]);
 const pageNum = ref(1);
@@ -142,7 +143,7 @@ const loadPost = () => {
       tableData.value = res.data.data;
       total.value = res.data.total;
     } else {
-      alert('获取数据失败');
+      ElMessage.error('获取数据失败，请稍后重试');
     }
   })
 }
@@ -166,11 +167,11 @@ const add = () => {
 const save = () => {
   axios.post('http://localhost:8090/user/saveOrMod', form.value).then(res => {
     if(res.data.code === 200){
-      alert('操作成功');
-      centerDialogVisible.value = false; // 关闭弹窗
-      loadPost(); // 刷新表格
+      ElMessage.success('保存成功');
+      centerDialogVisible.value = false;
+      loadPost();
     }else{
-      alert('操作失败');
+      ElMessage.error('操作失败，请检查输入信息');
     }
   })
 }
@@ -189,10 +190,10 @@ const mod = (row) => {
 const del = (id) => {
   axios.get('http://localhost:8090/user/delete?id='+id).then(res => {
     if(res.data.code === 200){
-      alert('删除成功');
+      ElMessage.success('删除成功');
       loadPost();
     }else{
-      alert('删除失败');
+      ElMessage.error('删除失败');
     }
   })
 }

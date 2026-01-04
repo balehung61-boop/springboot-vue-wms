@@ -18,6 +18,7 @@ public class Goods {
     private Integer goodstypeId;
 
     private Integer count; // 库存
-    private String unit;   // 单位
+    private String unit; // 单位
     private String remark;
+    private String image; // 图片URL
 }

@@ -164,7 +164,7 @@ const handleAvatarSuccess = (res) => {
     // 2. 自动保存到数据库
     saveUser();
   } else {
-    alert('头像上传失败');
+    ElMessage.error('头像上传失败，请重试');
   }
 }
 

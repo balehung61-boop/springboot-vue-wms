@@ -22,25 +22,30 @@ public class StorageController {
 
     // 新增或修改
     @PostMapping("/saveOrMod")
-    public Result saveOrMod(@RequestBody Storage storage){
+    public Result saveOrMod(@RequestBody Storage storage) {
         return storageService.saveOrUpdate(storage) ? Result.success() : Result.fail();
     }
 
     // 删除
     @GetMapping("/delete")
-    public Result delete(Integer id){
+    public Result delete(Integer id) {
         return storageService.removeById(id) ? Result.success() : Result.fail();
     }
 
-    // 分页查询
+    // 分页查询 - 支持多字段模糊搜索
     @PostMapping("/listPage")
-    public Result listPage(@RequestBody QueryPageParam query){
+    public Result listPage(@RequestBody QueryPageParam query) {
         Page<Storage> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<Storage> lambdaQueryWrapper = new LambdaQueryWrapper<>();
 
-        String name = (String)query.getParam().get("name");
-        if(StringUtils.isNotBlank(name)){
-            lambdaQueryWrapper.like(Storage::getName, name);
+        String name = (String) query.getParam().get("name");
+        if (StringUtils.isNotBlank(name)) {
+            // 支持多字段模糊搜索：名称、地址、负责人、备注
+            lambdaQueryWrapper.and(wrapper -> wrapper
+                    .like(Storage::getName, name)
+                    .or().like(Storage::getAddress, name)
+                    .or().like(Storage::getManager, name)
+                    .or().like(Storage::getRemark, name));
         }
 
         IPage result = storageService.page(page, lambdaQueryWrapper);
@@ -49,7 +54,7 @@ public class StorageController {
 
     // 查询所有 (专门给下拉框用的)
     @GetMapping("/list")
-    public Result list(){
+    public Result list() {
         List<Storage> list = storageService.list();
         return Result.success(list);
     }

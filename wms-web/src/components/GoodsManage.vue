@@ -68,7 +68,7 @@
             <el-icon><Refresh /></el-icon> 重置
           </el-button>
           <el-button 
-            v-if="user.roleId != 2" 
+            v-if="user && user.roleId != 2" 
             type="success" 
             class="action-btn add-btn" 
             @click="add"
@@ -109,7 +109,7 @@
               </div>
               
               <!-- 悬浮操作层 (仅管理员) -->
-              <div class="hover-actions" v-if="user.roleId != 2">
+              <div class="hover-actions" v-if="user && user.roleId != 2">
                  <el-tooltip content="入库" placement="top">
                     <button class="icon-btn in-btn" @click.stop="inGoods(item)">
                       <el-icon><Download /></el-icon>
@@ -168,7 +168,7 @@
             </div>
 
             <!-- 普通用户操作 -->
-            <div class="card-footer" v-if="user.roleId == 2">
+            <div class="card-footer" v-if="user && user.roleId == 2">
               <el-button type="warning" class="cart-btn" @click="addCart(item)">
                 <el-icon><ShoppingCart /></el-icon> 加入购物车
               </el-button>
@@ -328,7 +328,7 @@ import {
 } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 
-const user = JSON.parse(sessionStorage.getItem('user'));
+const user = JSON.parse(sessionStorage.getItem('user')) || null;
 
 // 状态
 const name = ref('');

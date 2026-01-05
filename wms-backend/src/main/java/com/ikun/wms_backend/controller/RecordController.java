@@ -54,4 +54,12 @@ public class RecordController {
         IPage result = recordService.page(page, queryWrapper);
         return Result.success(result.getRecords(), result.getTotal());
     }
+
+    /**
+     * 管理员查看所有订单记录（包含商品详情）
+     */
+    @GetMapping("/listAllOrders")
+    public Result listAllOrders() {
+        return Result.success(recordService.listAllOrders());
+    }
 }

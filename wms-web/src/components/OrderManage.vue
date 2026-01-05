@@ -4,88 +4,167 @@
     <div class="order-hero">
       <div class="hero-overlay"></div>
       <div class="hero-content">
-        <h1 class="page-title">我的历史订单</h1>
-        <p class="page-subtitle">查看所有历史交易记录，追踪您的消费足迹</p>
+        <h1 class="page-title">{{ isAdmin ? '订单管理中心' : '我的历史订单' }}</h1>
+        <p class="page-subtitle">{{ isAdmin ? '查看所有用户订单记录，管理订单状态' : '查看所有历史交易记录，追踪您的消费足迹' }}</p>
       </div>
     </div>
 
     <!-- 2. Main Content -->
     <div class="order-container">
       
-      <div class="timeline-header">
-         <h2>订单时间轴 <span class="count" v-if="tableData.length">({{ tableData.length }})</span></h2>
-      </div>
-
-      <transition-group name="list" tag="div" class="order-list">
-        <div class="order-card" v-for="(item, index) in tableData" :key="index">
-          
-          <!-- Left: Date Node -->
-          <div class="order-node">
-             <div class="node-dot"></div>
-             <div class="node-line" v-if="index !== tableData.length - 1"></div>
-          </div>
-
-          <!-- Right: Content -->
-          <div class="order-content-box">
-             <div class="order-header">
-                <div class="order-time">
-                  <el-icon><Calendar /></el-icon> {{ formatTime(item.createtime) }}
-                </div>
-                <div class="order-status">
-                   <el-tag type="success" effect="dark" size="small">已完成</el-tag>
-                </div>
-             </div>
-
-             <div class="order-body">
-                <div class="product-info">
-                   <div class="product-icon">
-                      <el-icon><Goods /></el-icon>
-                   </div>
-                   <div class="product-text">
-                      <h3 class="product-name">{{ item.goodsname }}</h3>
-                      <span class="product-count">x {{ Math.abs(item.count) }}</span>
-                   </div>
-                </div>
-                
-                <!-- Parsed Details from Remark -->
-                <div class="order-details" v-if="parseRemark(item.remark)">
-                   <div class="detail-item" v-if="parsedData(item.remark).linkman">
-                      <el-icon><User /></el-icon>
-                      <span>{{ parsedData(item.remark).linkman }}</span>
-                   </div>
-                   <div class="detail-item" v-if="parsedData(item.remark).address">
-                      <el-icon><LocationInformation /></el-icon>
-                      <span>{{ parsedData(item.remark).address }}</span>
-                   </div>
-                   <div class="detail-item" v-if="parsedData(item.remark).payMethod">
-                      <el-icon><CreditCard /></el-icon>
-                      <span>{{ parsedData(item.remark).payMethod }}</span>
-                   </div>
-                </div>
-                <!-- Fallback if parse fails -->
-                <div class="order-raw-remark" v-else>
-                   {{ item.remark }}
-                </div>
-             </div>
-          </div>
-
+      <!-- 管理员视图：表格 -->
+      <template v-if="isAdmin">
+        <div class="admin-header">
+          <h2><el-icon><List /></el-icon> 全部订单 <span class="count" v-if="tableData.length">({{ tableData.length }})</span></h2>
         </div>
-      </transition-group>
 
-      <el-empty v-if="tableData.length === 0" description="暂无历史订单记录" :image-size="160"></el-empty>
+        <el-card class="order-table-card" shadow="hover">
+          <el-table :data="tableData" style="width: 100%" stripe>
+            <el-table-column prop="id" label="订单编号" width="90" />
+            <el-table-column label="商品照片" width="100">
+              <template #default="scope">
+                <el-image 
+                  v-if="scope.row.goodsImage" 
+                  :src="scope.row.goodsImage" 
+                  :preview-src-list="[scope.row.goodsImage]"
+                  fit="cover"
+                  class="goods-thumb"
+                />
+                <div v-else class="no-image">
+                  <el-icon><Picture /></el-icon>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="goodsName" label="商品名称" min-width="130" />
+            <el-table-column label="单价" width="100">
+              <template #default="scope">
+                <span class="price-text">￥{{ scope.row.goodsPrice?.toFixed(2) || '0.00' }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="count" label="数量" width="80">
+              <template #default="scope">
+                <span>{{ Math.abs(scope.row.count) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="总价格" width="110">
+              <template #default="scope">
+                <span class="total-price">￥{{ scope.row.totalPrice?.toFixed(2) || '0.00' }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="收货人" min-width="150">
+              <template #default="scope">
+                <div class="recipient-info">
+                  <div v-if="parsedData(scope.row.remark).linkman">
+                    <el-icon><User /></el-icon> {{ parsedData(scope.row.remark).linkman }}
+                  </div>
+                  <div v-if="parsedData(scope.row.remark).address" class="address-text">
+                    <el-icon><Location /></el-icon> {{ parsedData(scope.row.remark).address }}
+                  </div>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="备注" min-width="120">
+              <template #default="scope">
+                <el-tooltip v-if="scope.row.remark && scope.row.remark.length > 20" :content="scope.row.remark" placement="top">
+                  <span class="remark-text">{{ scope.row.remark.substring(0, 20) }}...</span>
+                </el-tooltip>
+                <span v-else class="remark-text">{{ scope.row.remark || '-' }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="下单时间" width="170">
+              <template #default="scope">
+                <span class="time-text">{{ formatTime(scope.row.createtime) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="100">
+              <template #default>
+                <el-tag type="success" effect="dark" size="small">已签收</el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </template>
+
+      <!-- 普通用户视图：时间轴 -->
+      <template v-else>
+        <div class="timeline-header">
+          <h2>订单时间轴 <span class="count" v-if="tableData.length">({{ tableData.length }})</span></h2>
+        </div>
+
+        <transition-group name="list" tag="div" class="order-list">
+          <div class="order-card" v-for="(item, index) in tableData" :key="index">
+            
+            <!-- Left: Date Node -->
+            <div class="order-node">
+               <div class="node-dot"></div>
+               <div class="node-line" v-if="index !== tableData.length - 1"></div>
+            </div>
+
+            <!-- Right: Content -->
+            <div class="order-content-box">
+               <div class="order-header">
+                  <div class="order-time">
+                    <el-icon><Calendar /></el-icon> {{ formatTime(item.createtime) }}
+                  </div>
+                  <div class="order-status">
+                     <el-tag type="success" effect="dark" size="small">已完成</el-tag>
+                  </div>
+               </div>
+
+               <div class="order-body">
+                  <div class="product-info">
+                     <div class="product-icon">
+                        <el-icon><Goods /></el-icon>
+                     </div>
+                     <div class="product-text">
+                        <h3 class="product-name">{{ item.goodsname || item.goodsName }}</h3>
+                        <span class="product-count">x {{ Math.abs(item.count) }}</span>
+                     </div>
+                  </div>
+                  
+                  <!-- Parsed Details from Remark -->
+                  <div class="order-details" v-if="parseRemark(item.remark)">
+                     <div class="detail-item" v-if="parsedData(item.remark).linkman">
+                        <el-icon><User /></el-icon>
+                        <span>{{ parsedData(item.remark).linkman }}</span>
+                     </div>
+                     <div class="detail-item" v-if="parsedData(item.remark).address">
+                        <el-icon><LocationInformation /></el-icon>
+                        <span>{{ parsedData(item.remark).address }}</span>
+                     </div>
+                     <div class="detail-item" v-if="parsedData(item.remark).payMethod">
+                        <el-icon><CreditCard /></el-icon>
+                        <span>{{ parsedData(item.remark).payMethod }}</span>
+                     </div>
+                  </div>
+                  <!-- Fallback if parse fails -->
+                  <div class="order-raw-remark" v-else>
+                     {{ item.remark }}
+                  </div>
+               </div>
+            </div>
+
+          </div>
+        </transition-group>
+      </template>
+
+      <el-empty v-if="tableData.length === 0" description="暂无订单记录" :image-size="160"></el-empty>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { 
-  Calendar, Goods, User, LocationInformation, CreditCard 
+  Calendar, Goods, User, LocationInformation, CreditCard, List, Picture, Location
 } from '@element-plus/icons-vue';
 
 const user = JSON.parse(sessionStorage.getItem('user'));
 const tableData = ref([]);
+
+// 判断是否为管理员 (roleId !== 2 表示管理员或超级管理员)
+const isAdmin = computed(() => user && user.roleId !== 2);
 
 // 格式化时间
 const formatTime = (timeStr) => {
@@ -102,6 +181,7 @@ const parseRemark = (remark) => {
 
 const parsedData = (remark) => {
   const res = { linkman: '', address: '', payMethod: '' };
+  if (!remark) return res;
   try {
     // 简单解析逻辑
     if (remark.includes('收货人:')) {
@@ -133,16 +213,29 @@ const parsedData = (remark) => {
 }
 
 onMounted(() => {
-  // 复用 listPage 接口
-  axios.post('http://localhost:8090/record/listPage', {
-    pageNum: 1, pageSize: 100,
-    param: { userId: user.id } 
-  }).then(res => {
-    if (res.data.code === 200) {
-       // 按时间倒序
-       tableData.value = res.data.data.sort((a,b) => new Date(b.createtime) - new Date(a.createtime));
-    }
-  })
+  if (isAdmin.value) {
+    // 管理员：调用新的API获取所有订单（含商品信息）
+    axios.get('http://localhost:8090/record/listAllOrders').then(res => {
+      if (res.data.code === 200) {
+        tableData.value = res.data.data || [];
+      }
+    }).catch(err => {
+      console.error('加载订单失败', err);
+    });
+  } else {
+    // 普通用户：复用 listPage 接口
+    axios.post('http://localhost:8090/record/listPage', {
+      pageNum: 1, pageSize: 100,
+      param: { userId: user?.id } 
+    }).then(res => {
+      if (res.data.code === 200) {
+         // 按时间倒序
+         tableData.value = (res.data.data || []).sort((a,b) => new Date(b.createtime) - new Date(a.createtime));
+      }
+    }).catch(err => {
+      console.error('加载订单失败', err);
+    });
+  }
 })
 </script>
 
@@ -172,18 +265,102 @@ onMounted(() => {
 
 /* 2. Container */
 .order-container {
-  max-width: 900px;
+  max-width: 1200px;
   margin: -50px auto 40px;
   padding: 0 24px;
   position: relative; z-index: 5;
 }
 
+/* Admin Header */
+.admin-header {
+  margin-bottom: 24px;
+  padding-left: 8px;
+}
+.admin-header h2 { 
+  font-size: 20px; color: #fff; margin: 0; 
+  display: flex; align-items: center; gap: 8px; 
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+}
+.count { font-size: 14px; opacity: 0.8; font-weight: 400; }
+
+/* Admin Table */
+.order-table-card {
+  border-radius: 16px;
+  overflow: hidden;
+}
+.order-table-card :deep(.el-card__body) {
+  padding: 0;
+}
+.order-table-card :deep(.el-table) {
+  font-size: 14px;
+}
+.order-table-card :deep(.el-table th) {
+  background-color: #f8fafc;
+  font-weight: 600;
+  color: #475569;
+}
+
+.goods-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.no-image {
+  width: 60px;
+  height: 60px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 24px;
+}
+
+.price-text {
+  color: #64748b;
+}
+.total-price {
+  color: #ef4444;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.recipient-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #475569;
+}
+.recipient-info .el-icon {
+  font-size: 14px;
+  color: #94a3b8;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+.address-text {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.remark-text {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.time-text {
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* Timeline (User View) */
 .timeline-header {
   margin-bottom: 24px;
   padding-left: 16px;
 }
 .timeline-header h2 { font-size: 20px; color: #fff; margin: 0; display: flex; align-items: center; gap: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-.count { font-size: 14px; opacity: 0.8; font-weight: 400; }
 
 /* 3. List & Cards */
 .order-list {

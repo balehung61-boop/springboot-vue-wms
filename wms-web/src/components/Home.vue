@@ -1,13 +1,42 @@
 <template>
   <div class="home-page">
-    <!-- 1. Hero Banner 区域 -->
-    <div class="hero-banner">
-      <div class="hero-overlay"></div>
-      <div class="hero-content">
-        <h1 class="hero-title">智能仓储 · 高效管理</h1>
-        <p class="hero-subtitle">{{ getGreeting() }}，{{ user?.name || '用户' }}！{{ getWelcomeMessage() }}</p>
-        
-        <!-- 大搜索框 -->
+    <!-- 1. 轮播图 Hero 区域 -->
+    <div class="carousel-wrapper">
+      <el-carousel trigger="click" height="480px" :interval="5000" arrow="always">
+        <!-- Slide 1: 网站目标 -->
+        <el-carousel-item>
+          <div class="carousel-slide slide-1">
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <h1 class="slide-title">WMS 智能仓储管理系统</h1>
+              <p class="slide-subtitle">目标：打造全球领先的数字化库存管理平台，让仓储更简单</p>
+            </div>
+          </div>
+        </el-carousel-item>
+        <!-- Slide 2: 核心功能 -->
+        <el-carousel-item>
+          <div class="carousel-slide slide-2">
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <h1 class="slide-title">实时监控 · 精准调度</h1>
+              <p class="slide-subtitle">功能：出入库全流程追踪，多维度数据报表，库存预警零延迟</p>
+            </div>
+          </div>
+        </el-carousel-item>
+        <!-- Slide 3: 业务范围 -->
+        <el-carousel-item>
+          <div class="carousel-slide slide-3">
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <h1 class="slide-title">全渠道业务支撑</h1>
+              <p class="slide-subtitle">业务：支持电商、冷链、保税等多业态仓储需求，助力企业降本增效</p>
+            </div>
+          </div>
+        </el-carousel-item>
+      </el-carousel>
+
+      <!-- 悬浮搜索组件 (固定在轮播图之上) -->
+      <div class="hero-float-content">
         <div class="hero-search">
           <el-icon class="search-icon"><Search /></el-icon>
           <input 
@@ -23,17 +52,109 @@
           </el-button>
         </div>
 
-        <!-- 快捷标签 -->
         <div class="quick-tags">
           <span class="quick-tag" @click="$router.push('/Storage')">仓库管理</span>
           <span class="quick-tag" @click="$router.push('/Goods')">商品管理</span>
-          <span class="quick-tag" @click="$router.push('/Cart')">购物车</span>
+          <span class="quick-tag" v-if="user?.roleId === 2" @click="$router.push('/Cart')">购物车</span>
           <span class="quick-tag" @click="$router.push('/Order')">订单查询</span>
         </div>
       </div>
     </div>
 
-    <!-- 2. 统计卡片区 -->
+    <!-- 2. 网站介绍文字区域 (新增) -->
+    <div class="intro-section">
+      <div class="intro-header">
+        <h2 class="intro-title">平台优势</h2>
+        <div class="intro-divider"></div>
+        <p class="intro-desc">
+          我们致力于为企业提供专业、稳定、高效的仓储管理解决方案。
+          <br>通过先进的技术架构与人性化的交互设计，重塑您的库存管理体验。
+        </p>
+      </div>
+      <div class="intro-grid">
+        <div class="intro-card">
+          <div class="intro-icon"><el-icon><DataBoard /></el-icon></div>
+          <h3 class="intro-card-title">数据可视化</h3>
+          <p class="intro-card-text">集成ECharts图表引擎，将复杂的库存数据转化为直观的动态看板，决策更敏捷。</p>
+        </div>
+        <div class="intro-card">
+          <div class="intro-icon"><el-icon><Lock /></el-icon></div>
+          <h3 class="intro-card-title">安全可靠</h3>
+          <p class="intro-card-text">基于Spring Boot构建的稳健后端与严格的权限控制体系，全方位保障您的数据资产安全。</p>
+        </div>
+        <div class="intro-card">
+          <div class="intro-icon"><el-icon><Cpu /></el-icon></div>
+          <h3 class="intro-card-title">智能自动化</h3>
+          <p class="intro-card-text">支持库存上下限预警、自动生成出入库单据，减少人工干预，大幅提升作业效率。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 为什么选择我们 (新增动画版块) -->
+    <div class="why-section">
+      <div class="why-header">
+        <h2 class="why-title">为什么选择 WMS?</h2>
+        <p class="why-subtitle">功能强大! 完全免费! 7*24小时一对一服务</p>
+      </div>
+      
+      <div class="why-grid">
+        <!-- Card 1 -->
+        <div class="why-card" :class="{ 'active-card': activeWhyCard === 0 }" @click="activeWhyCard = 0">
+          <div class="why-icon"><el-icon><Money /></el-icon></div>
+          <div class="why-content">
+            <h3>完全免费</h3>
+            <p>注册免费！年费免！维护费全免！成本压力一键清空，省钱省力更省心！</p>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="why-card" :class="{ 'active-card': activeWhyCard === 1 }" @click="activeWhyCard = 1">
+          <div class="why-icon" v-if="activeWhyCard !== 1"><el-icon><Place /></el-icon></div>
+          <div class="why-content">
+            <h3>契合本土</h3>
+            <p>支持中、英、日等多国语言；以国内仓储业务场景为中心，操作贴近本土员工使用习惯。</p>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="why-card" :class="{ 'active-card': activeWhyCard === 2 }" @click="activeWhyCard = 2">
+          <div class="why-icon"><el-icon><Timer /></el-icon></div>
+          <div class="why-content">
+            <h3>迭代迅速</h3>
+            <p>实时响应客户需求，以高效迭代的节奏按时交付新功能，做到每周都有新功能上线。</p>
+          </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="why-card" :class="{ 'active-card': activeWhyCard === 3 }" @click="activeWhyCard = 3">
+          <div class="why-icon"><el-icon><Medal /></el-icon></div>
+          <div class="why-content">
+            <h3>值得信赖</h3>
+            <p>专业技术团队，大品牌有保障；数据加密存储，系统稳定性高达 99.9%。</p>
+          </div>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="why-card" :class="{ 'active-card': activeWhyCard === 4 }" @click="activeWhyCard = 4">
+          <div class="why-icon"><el-icon><Service /></el-icon></div>
+          <div class="why-content">
+            <h3>服务极致</h3>
+            <p>7×24 小时真人在线，疑问随时有人答；一对一专属指导，手把手带教，助您快速上手。</p>
+          </div>
+        </div>
+
+        <!-- Card 6 -->
+        <div class="why-card" :class="{ 'active-card': activeWhyCard === 5 }" @click="activeWhyCard = 5">
+          <div class="why-icon"><el-icon><Connection /></el-icon></div>
+          <div class="why-content">
+            <h3>资源优质</h3>
+            <p>对接主流ERP、电商平台和全球物流渠道；携手旗下优质服务商，覆盖超百万客户群。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. 统计卡片区 -->
     <div class="stats-section">
       <div class="stat-card" v-for="(stat, index) in statCards" :key="index" :class="'stat-' + stat.type">
         <div class="stat-icon">
@@ -47,7 +168,7 @@
     </div>
 
     <!-- 3. 快捷功能区 -->
-    <div class="quick-actions-section">
+    <div class="quick-actions-section" v-if="user">
       <div class="action-card" @click="$router.push('/Storage')">
         <div class="action-icon storage-icon">
           <el-icon :size="32"><OfficeBuilding /></el-icon>
@@ -66,7 +187,7 @@
           <div class="action-desc">查看库存与出入库</div>
         </div>
       </div>
-      <div class="action-card" @click="$router.push('/Cart')">
+      <div class="action-card" v-if="user?.roleId === 2" @click="$router.push('/Cart')">
         <div class="action-icon cart-icon">
           <el-icon :size="32"><ShoppingCart /></el-icon>
         </div>
@@ -296,7 +417,7 @@
         </div>
       </transition>
     </Teleport>
-  </div>
+</div>
 </template>
 
 <script setup>
@@ -307,13 +428,15 @@ import { ElMessage } from 'element-plus';
 import bannerImg from '@/assets/banner.png';
 import { 
   Clock, OfficeBuilding, Box, TrendCharts, Grid, Goods, ShoppingCart, Document, User,
-  DataBoard, ShoppingBag, Coin, List, Close, Location, Phone, PriceTag, Search, ArrowRight
+  DataBoard, ShoppingBag, Coin, List, Close, Location, Phone, PriceTag, Search, ArrowRight,
+  Lock, Cpu, Money, Timer, Medal, Service, Connection, Place
 } from '@element-plus/icons-vue';
 
 const router = useRouter();
 const user = JSON.parse(sessionStorage.getItem('user'));
 const currentTime = ref('');
 const searchKeyword = ref('');
+const activeWhyCard = ref(null); // 记录当前选中的卡片
 let timer = null;
 
 // 统计数据
@@ -436,46 +559,89 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); });
   min-height: 100%;
 }
 
-/* Hero Banner */
-.hero-banner {
+/* Carousel Wrapper */
+.carousel-wrapper {
   position: relative;
-  height: 380px; 
-  background: url('@/assets/banner.png') center/cover no-repeat;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%; /* Full width of page */
+  width: 100%;
   margin-bottom: 24px;
 }
 
-.hero-overlay {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(135deg, rgba(30, 30, 47, 0.85) 0%, rgba(45, 45, 68, 0.75) 100%);
-}
-
-.hero-content {
+.carousel-slide {
   position: relative;
-  z-index: 2;
-  text-align: center;
-  color: #fff;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-size: cover;
+  background-position: center;
+}
+
+.slide-1 { background: linear-gradient(135deg, #1e1e2f 0%, #2d2d44 100%); }
+.slide-2 { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); }
+.slide-3 { background: linear-gradient(135deg, #0f766e 0%, #115e59 100%); }
+
+.slide-overlay {
+  position: absolute; inset: 0;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.05), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(255,255,255,0.05), transparent 40%);
+}
+
+.slide-content {
+  position: relative; z-index: 2; text-align: center; color: #fff;
   padding: 0 20px;
-  width: 100%;
+  animation: slideUp 0.8s ease-out;
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+.slide-title {
+  font-size: 42px; font-weight: 700; margin: 0 0 16px 0; letter-spacing: 2px;
+  text-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.slide-subtitle {
+  font-size: 18px; color: rgba(255,255,255,0.9); max-width: 600px; margin: 0 auto; line-height: 1.6;
 }
 
-.hero-title {
-  font-size: 42px;
-  font-weight: 700;
-  margin: 0 0 12px 0;
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  letter-spacing: 4px;
+/* Floating Search Bar */
+.hero-float-content {
+  position: absolute;
+  bottom: 60px; left: 0; right: 0;
+  z-index: 10;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  pointer-events: none; /* Allow clicks to pass through empty areas */
 }
+.hero-float-content > * { pointer-events: auto; } /* Re-enable clicks on children */
 
-.hero-subtitle {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.85);
-  margin: 0 0 32px 0;
+/* Intro Section */
+.intro-section {
+  max-width: 1200px; margin: 0 auto 60px; padding: 0 24px;
+  text-align: center;
 }
+.intro-header { margin-bottom: 40px; }
+.intro-title { font-size: 32px; font-weight: 700; color: #1e293b; margin: 0 0 12px; }
+.intro-divider { width: 60px; height: 4px; background: linear-gradient(to right, #667eea, #764ba2); margin: 0 auto 20px; border-radius: 2px; }
+.intro-desc { font-size: 16px; color: #64748b; line-height: 1.8; max-width: 700px; margin: 0 auto; }
+
+.intro-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;
+}
+.intro-card {
+  background: #fff; border-radius: 20px; padding: 32px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+  border: 1px solid #f1f5f9;
+}
+.intro-card:hover { transform: translateY(-10px); box-shadow: 0 20px 50px rgba(0,0,0,0.1); border-color: #e2e8f0; }
+.intro-icon {
+  width: 64px; height: 64px; margin: 0 auto 20px;
+  background: #f8fafc; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; color: #667eea;
+  transition: all 0.3s;
+}
+.intro-card:hover .intro-icon { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+.intro-card-title { font-size: 20px; font-weight: 600; color: #1e293b; margin: 0 0 12px; }
+.intro-card-text { font-size: 14px; color: #64748b; line-height: 1.6; }
 
 /* Hero Search */
 .hero-search {
@@ -636,6 +802,89 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer); });
   margin-bottom: 24px;
   align-items: stretch;
 }
+
+/* Why Choose Us Section */
+.why-section {
+  max-width: 1400px;
+  margin: 0 auto 60px;
+  padding: 0 24px;
+}
+
+.why-header {
+  text-align: center;
+  margin-bottom: 50px;
+  animation: fadeInDown 0.8s ease-out;
+}
+.why-title {
+  font-size: 36px; font-weight: 800; color: #1e293b; margin: 0 0 16px;
+}
+.why-subtitle {
+  font-size: 18px; color: #64748b; font-weight: 500;
+}
+
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+}
+
+.why-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid #f1f5f9;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+  animation: fadeInUp 0.8s ease-out backwards;
+}
+
+.why-card:nth-child(1) { animation-delay: 0.1s; }
+.why-card:nth-child(2) { animation-delay: 0.2s; }
+.why-card:nth-child(3) { animation-delay: 0.3s; }
+.why-card:nth-child(4) { animation-delay: 0.4s; }
+.why-card:nth-child(5) { animation-delay: 0.5s; }
+.why-card:nth-child(6) { animation-delay: 0.6s; }
+
+.why-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+}
+
+.why-icon {
+  width: 64px; height: 64px;
+  font-size: 32px; color: #0066ff;
+  display: flex; align-items: center; justify-content: flex-start;
+}
+
+.why-content h3 {
+  font-size: 22px; font-weight: 700; color: #1e293b; margin: 0 0 12px;
+}
+.why-content p {
+  font-size: 15px; color: #64748b; line-height: 1.6; margin: 0;
+}
+
+/* Active Blue Card Style */
+.why-card.active-card {
+  background: linear-gradient(135deg, #0066ff 0%, #0052cc 100%);
+  border: none;
+  color: #fff;
+  transform: scale(1.05);
+  box-shadow: 0 20px 50px rgba(0, 102, 255, 0.3);
+  justify-content: center;
+}
+.why-card.active-card:hover {
+  transform: scale(1.05) translateY(-5px);
+}
+.why-card.active-card h3 { color: #fff; font-size: 24px; }
+.why-card.active-card p { color: rgba(255,255,255,0.9); font-size: 16px; }
+
+@keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 
 .content-col {
   flex: 1;

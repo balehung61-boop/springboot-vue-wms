@@ -208,13 +208,14 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted } from 'vue';
 import { User, Lock, Box, Phone, Message, Star, InfoFilled, ArrowDown, Stamp, Unlock, Calendar } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import axios from 'axios';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 
 const router = useRouter();
+const route = useRoute();
 const loginFormRef = ref(null);
 const registerFormRef = ref(null);
 const loading = ref(false);
@@ -222,6 +223,13 @@ const registerLoading = ref(false);
 const rememberMe = ref(false);
 const isRegister = ref(false);
 const showOptional = ref(false);
+
+// 检查 URL 参数，支持从首页直接跳转到注册
+onMounted(() => {
+  if (route.query.mode === 'register') {
+    isRegister.value = true;
+  }
+});
 
 // 登录表单
 const loginForm = reactive({

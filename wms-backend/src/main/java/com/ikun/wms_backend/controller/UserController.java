@@ -128,4 +128,16 @@ public class UserController {
         return Result.fail();
     }
     // ▲▲▲ 注册接口结束 ▲▲▲
+
+    // ▼▼▼ 重置密码接口 (超级管理员使用) ▼▼▼
+    @GetMapping("/resetPassword")
+    public Result resetPassword(@RequestParam Integer id) {
+        User user = userService.getById(id);
+        if (user == null) {
+            return Result.fail();
+        }
+        user.setPassword("123"); // 默认重置为123
+        return userService.updateById(user) ? Result.success() : Result.fail();
+    }
+    // ▲▲▲ 重置密码接口结束 ▲▲▲
 }

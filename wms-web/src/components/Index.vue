@@ -1,7 +1,7 @@
 <template>
   <el-container class="main-container" direction="vertical">
     <!-- 顶部导航栏 -->
-    <el-header class="top-header">
+    <el-header class="top-header" :class="{ scrolled: isScrolled }">
       <!-- Logo区域 -->
       <div class="header-logo" @click="$router.push('/Home')">
         <div class="logo-icon">
@@ -30,71 +30,70 @@
           <el-icon><Goods /></el-icon>
           <span>商品</span>
         </el-menu-item>
-        <el-menu-item index="/Cart">
-          <el-icon><ShoppingCart /></el-icon>
-          <span>购物车</span>
-        </el-menu-item>
-        <el-menu-item index="/Order">
-          <el-icon><Document /></el-icon>
-          <span>订单</span>
-        </el-menu-item>
-        <!-- 管理员菜单 -->
-        <el-menu-item v-if="user?.roleId === 1" index="/User">
-          <el-icon><User /></el-icon>
-          <span>用户管理</span>
-        </el-menu-item>
+        <!-- 以下菜单需要登录才可访问 -->
+        <template v-if="isLoggedIn">
+          <!-- 购物车只对普通用户显示 -->
+          <el-menu-item v-if="user?.roleId === 2" index="/Cart">
+            <el-icon><ShoppingCart /></el-icon>
+            <span>购物车</span>
+          </el-menu-item>
+          <el-menu-item index="/Order">
+            <el-icon><Document /></el-icon>
+            <span>订单</span>
+          </el-menu-item>
+          <!-- 管理员菜单 (仅超级管理员可见) -->
+          <el-menu-item v-if="user?.roleId === 0" index="/User">
+            <el-icon><User /></el-icon>
+            <span>用户管理</span>
+          </el-menu-item>
+        </template>
       </el-menu>
 
       <!-- 右侧区域 -->
       <div class="header-right">
-        <!-- 搜索框 -->
-        <div class="search-box">
-          <el-icon class="search-icon"><Search /></el-icon>
-          <input 
-            type="text" 
-            v-model="searchKeyword"
-            placeholder="搜索商品、仓库..." 
-            class="search-input"
-            @keyup.enter="handleSearch"
-          />
-          <span 
-            v-if="searchKeyword" 
-            class="search-clear"
-            @click="searchKeyword = ''"
-          >
-            <el-icon><Close /></el-icon>
-          </span>
-        </div>
 
-        <!-- 通知图标 -->
-        <el-badge :value="3" class="notification-badge">
-          <el-icon class="header-action" :size="20"><Bell /></el-icon>
-        </el-badge>
+        <!-- 已登录用户: 通知图标和下拉菜单 -->
+        <template v-if="isLoggedIn">
+          <el-badge :value="3" class="notification-badge">
+            <el-icon class="header-action" :size="20"><Bell /></el-icon>
+          </el-badge>
 
-        <!-- 用户下拉菜单 -->
-        <el-dropdown trigger="click" class="user-dropdown">
-          <div class="user-info">
-            <el-avatar :size="36" :src="user?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'" />
-            <span class="user-name">{{ user?.name || '用户' }}</span>
-            <el-icon><ArrowDown /></el-icon>
-          </div>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item @click="$router.push('/Person')">
-                <el-icon><User /></el-icon>
-                个人中心
-              </el-dropdown-item>
-              <el-dropdown-item @click="toSettings">
-                <el-icon><Setting /></el-icon>
-                系统设置
-              </el-dropdown-item>
-              <el-dropdown-item divided @click="logout">
-                <el-icon><SwitchButton /></el-icon>
-                退出登录
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+          <el-dropdown trigger="click" class="user-dropdown">
+            <div class="user-info">
+              <el-avatar :size="36" :src="user?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'" />
+              <span class="user-name">{{ user?.name || '用户' }}</span>
+              <el-icon><ArrowDown /></el-icon>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="$router.push('/Person')">
+                  <el-icon><User /></el-icon>
+                  个人中心
+                </el-dropdown-item>
+                <el-dropdown-item @click="toSettings">
+                  <el-icon><Setting /></el-icon>
+                  系统设置
+                </el-dropdown-item>
+                <el-dropdown-item divided @click="logout">
+                  <el-icon><SwitchButton /></el-icon>
+                  退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </template>
+
+        <!-- 游客: 登录/注册按钮 -->
+        <template v-else>
+          <button class="guest-btn login-btn" @click="$router.push('/login')">
+            <el-icon><User /></el-icon>
+            登录
+          </button>
+          <button class="guest-btn register-btn" @click="$router.push('/login?mode=register')">
+            <el-icon><EditPen /></el-icon>
+            注册
+          </button>
+        </template>
       </div>
     </el-header>
 
@@ -114,7 +113,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { 
@@ -125,37 +124,44 @@ import {
   ShoppingCart, 
   Document, 
   User, 
-  Search, 
-  Close, 
   Bell, 
   ArrowDown, 
   Setting, 
-  SwitchButton 
+  SwitchButton,
+  EditPen
 } from '@element-plus/icons-vue';
 
 const route = useRoute();
 const router = useRouter();
-const user = JSON.parse(sessionStorage.getItem('user'));
-const searchKeyword = ref('');
+const user = ref(JSON.parse(sessionStorage.getItem('user')));
+const isScrolled = ref(false);
+
+// 检查用户是否已登录
+const isLoggedIn = computed(() => !!user.value);
 
 // 当前激活的菜单
 const activeMenu = computed(() => route.path);
 
-// 搜索处理
-const handleSearch = () => {
-  if (!searchKeyword.value.trim()) {
-    ElMessage.warning('请输入搜索关键词');
-    return;
-  }
-  sessionStorage.setItem('globalSearch', searchKeyword.value.trim());
-  router.push('/Goods');
-  ElMessage.info(`正在搜索: ${searchKeyword.value}`);
+// 滚动检测
+const handleScroll = () => {
+  isScrolled.value = window.scrollY > 50;
 };
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll);
+  handleScroll(); // 初始化
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll);
+});
+
 
 // 退出登录
 const logout = () => {
   sessionStorage.removeItem('user');
-  router.push('/');
+  user.value = null; // 更新响应式状态
+  router.push('/login');
   ElMessage.success('已安全退出');
 };
 
@@ -182,7 +188,100 @@ const toSettings = () => {
   position: sticky;
   top: 0;
   z-index: 1000;
+  transition: all 0.3s ease;
 }
+
+/* Scrolled state - white background */
+.top-header.scrolled {
+  background: #ffffff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.top-header.scrolled .logo-text {
+  color: #1e293b;
+}
+
+.top-header.scrolled .nav-menu :deep(.el-menu-item) {
+  color: #475569;
+}
+
+.top-header.scrolled .nav-menu :deep(.el-menu-item:hover) {
+  color: #1e293b;
+  background: rgba(102, 126, 234, 0.08);
+}
+
+.top-header.scrolled .nav-menu :deep(.el-menu-item.is-active) {
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.top-header.scrolled .header-action {
+  color: #475569;
+}
+
+.top-header.scrolled .user-info {
+  background: #f1f5f9;
+}
+
+.top-header.scrolled .user-name {
+  color: #1e293b;
+}
+
+.top-header.scrolled .user-info .el-icon {
+  color: #475569;
+}
+
+/* 游客登录/注册按钮 */
+.guest-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  outline: none;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.login-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.login-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #fff;
+}
+
+.register-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.register-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+}
+
+/* Scrolled state - 游客按钮 */
+.top-header.scrolled .login-btn {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.top-header.scrolled .login-btn:hover {
+  background: rgba(102, 126, 234, 0.08);
+  color: #5a6fd6;
+}
+
 
 /* Logo */
 .header-logo {
@@ -215,6 +314,7 @@ const toSettings = () => {
   font-weight: 700;
   color: #fff;
   letter-spacing: 1px;
+  transition: color 0.3s ease;
 }
 
 /* 导航菜单 */
@@ -233,6 +333,25 @@ const toSettings = () => {
   padding: 0 20px;
   border-bottom: none !important;
   transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Animated underline on hover */
+.nav-menu :deep(.el-menu-item::after) {
+  content: '';
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.nav-menu :deep(.el-menu-item:hover::after) {
+  width: 60%;
 }
 
 .nav-menu :deep(.el-menu-item:hover) {
@@ -243,7 +362,10 @@ const toSettings = () => {
 .nav-menu :deep(.el-menu-item.is-active) {
   background: rgba(102, 126, 234, 0.3);
   color: #fff;
-  border-bottom: 3px solid #667eea !important;
+}
+
+.nav-menu :deep(.el-menu-item.is-active::after) {
+  width: 70%;
 }
 
 .nav-menu :deep(.el-menu-item .el-icon) {
@@ -255,64 +377,6 @@ const toSettings = () => {
   display: flex;
   align-items: center;
   gap: 20px;
-}
-
-/* 搜索框 */
-.search-box {
-  position: relative;
-  width: 240px;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 16px;
-}
-
-.search-input {
-  width: 100%;
-  padding: 8px 36px 8px 38px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-  font-size: 14px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  transition: all 0.3s ease;
-  outline: none;
-}
-
-.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.search-input:focus {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(102, 126, 234, 0.6);
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
-}
-
-.search-clear {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-}
-
-.search-clear:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.2);
 }
 
 /* 通知图标 */
